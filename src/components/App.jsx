@@ -56,10 +56,12 @@ export default class App extends Component {
     localStorageContacts && this.setState({ contacts: localStorageContacts });
   }
 
-  componentDidUpdate() {
+  componentDidUpdate(prevState) {
     const { contacts } = this.state;
 
-    localStorage.setItem(LS_KEY, JSON.stringify(contacts));
+    if (prevState.contacts !== contacts) {
+      localStorage.setItem(LS_KEY, JSON.stringify(contacts));
+    }
   }
 
   render() {
