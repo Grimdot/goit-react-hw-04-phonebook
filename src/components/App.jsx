@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { Component, useState, useEffect, useRef } from 'react';
 import { nanoid } from 'nanoid';
 import ContactList from './ContactList/ContactList';
 import Filter from './Filter/Filter';
@@ -7,85 +7,84 @@ import css from './App.module.css';
 
 const LS_KEY = 'contacts';
 
-export default class App extends Component {
-  state = {
-    contacts: [],
-    filter: '',
-  };
+const App = () => {
+  const [contacts, setContacts] = useState([]);
+  const [filter, setFilter] = useState('');
+  const firstRender = useRef(true);
 
-  updateContactsList = (newContactName, newContactNumber) => {
-    this.checkExistingContact(newContactName)
+  const normalizedFilter = filter.toLowerCase().trim();
+
+  const visibleContacts = contacts.filter(contact =>
+    contact.name.toLowerCase().includes(normalizedFilter)
+  );
+
+  const updateContactsList = (newContactName, newContactNumber) => {
+    isContactExists(newContactName)
       ? alert(`${newContactName} is already in contacts!`)
-      : this.setState(prevState => {
-          return {
-            contacts: [
-              {
-                id: nanoid(),
-                name: newContactName,
-                number: newContactNumber,
-              },
-              ...prevState.contacts,
-            ],
-          };
+      : setContacts(prevState => {
+          return [
+            {
+              id: nanoid(),
+              name: newContactName,
+              number: newContactNumber,
+            },
+            ...prevState,
+          ];
         });
   };
 
-  onInputChange = e => {
-    this.setState({ [e.target.name]: e.target.value });
+  const onInputChange = e => {
+    const inputName = e.target.name;
+    const inputValue = e.target.value;
+
+    switch (inputName) {
+      case 'filter':
+        setFilter(inputValue);
+        break;
+
+      default:
+        return;
+    }
   };
 
-  deleteContact = id => {
-    this.setState(prevState => {
-      return {
-        contacts: prevState.contacts.filter(contact => contact.id !== id),
-      };
+  const deleteContact = id => {
+    setContacts(prevState => {
+      return [...prevState.filter(contact => contact.id !== id)];
     });
   };
 
-  checkExistingContact = newName => {
-    const normalizedNewName = newName.toLowerCase();
+  const isContactExists = newName => {
+    const normalizedNewName = newName.toLowerCase().trim();
 
-    return this.state.contacts.some(
+    return contacts.some(
       ({ name }) => name.toLowerCase() === normalizedNewName
     );
   };
 
-  componentDidMount() {
-    const localStorageContacts = JSON.parse(localStorage.getItem(LS_KEY));
+  useEffect(() => {
+    const LSContacts = JSON.parse(localStorage.getItem(LS_KEY));
 
-    localStorageContacts && this.setState({ contacts: localStorageContacts });
-  }
+    LSContacts && setContacts(LSContacts);
+  }, []);
 
-  componentDidUpdate(prevState) {
-    const { contacts } = this.state;
-
-    if (prevState.contacts !== contacts) {
-      localStorage.setItem(LS_KEY, JSON.stringify(contacts));
+  useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
     }
-  }
+    localStorage.setItem(LS_KEY, JSON.stringify(contacts));
+  }, [contacts]);
 
-  render() {
-    const normilizedFilter = this.state.filter.toLowerCase();
+  return (
+    <div className={css.container}>
+      <h1>Phonebook</h1>
+      <ContactForm updateContactsList={updateContactsList} />
 
-    const visibleContacts = this.state.contacts.filter(contact =>
-      contact.name.toLowerCase().includes(normilizedFilter)
-    );
+      <h2>Contacts</h2>
+      <Filter inputValue={filter} onInputChange={onInputChange} />
+      <ContactList contacts={visibleContacts} handleDeleteBtn={deleteContact} />
+    </div>
+  );
+};
 
-    return (
-      <div className={css.container}>
-        <h1>Phonebook</h1>
-        <ContactForm updateContactsList={this.updateContactsList} />
-
-        <h2>Contacts</h2>
-        <Filter
-          inputValue={this.state.filter}
-          onInputChange={this.onInputChange}
-        />
-        <ContactList
-          contacts={visibleContacts}
-          handleDeleteBtn={this.deleteContact}
-        />
-      </div>
-    );
-  }
-}
+export default App;
