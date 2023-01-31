@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { nanoid } from 'nanoid';
 import ContactList from './ContactList/ContactList';
 import Filter from './Filter/Filter';
@@ -8,9 +8,16 @@ import css from './App.module.css';
 const LS_KEY = 'contacts';
 
 const App = () => {
-  const [contacts, setContacts] = useState([]);
+  const [contacts, setContacts] = useState(() => {
+    const LSContacts = JSON.parse(localStorage.getItem(LS_KEY));
+
+    if (LSContacts) {
+      return LSContacts;
+    } else {
+      return [];
+    }
+  });
   const [filter, setFilter] = useState('');
-  const firstRender = useRef(true);
 
   const normalizedFilter = filter.toLowerCase().trim();
 
@@ -33,17 +40,9 @@ const App = () => {
         });
   };
 
-  const onInputChange = ({ target }) => {
-    const { name, value } = target;
-
-    switch (name) {
-      case 'filter':
-        setFilter(value);
-        break;
-
-      default:
-        return;
-    }
+  const filterInputChange = ({ target }) => {
+    const { value } = target;
+    setFilter(value);
   };
 
   const deleteContact = id => {
@@ -61,16 +60,6 @@ const App = () => {
   };
 
   useEffect(() => {
-    const LSContacts = JSON.parse(localStorage.getItem(LS_KEY));
-
-    LSContacts && setContacts(LSContacts);
-  }, []);
-
-  useEffect(() => {
-    if (firstRender.current) {
-      firstRender.current = false;
-      return;
-    }
     localStorage.setItem(LS_KEY, JSON.stringify(contacts));
   }, [contacts]);
 
@@ -80,7 +69,7 @@ const App = () => {
       <ContactForm updateContactsList={updateContactsList} />
 
       <h2>Contacts</h2>
-      <Filter inputValue={filter} onInputChange={onInputChange} />
+      <Filter inputValue={filter} onInputChange={filterInputChange} />
       <ContactList contacts={visibleContacts} handleDeleteBtn={deleteContact} />
     </div>
   );
