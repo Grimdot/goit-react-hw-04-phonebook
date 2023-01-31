@@ -33,13 +33,12 @@ const App = () => {
         });
   };
 
-  const onInputChange = e => {
-    const inputName = e.target.name;
-    const inputValue = e.target.value;
+  const onInputChange = ({ target }) => {
+    const { name, value } = target;
 
-    switch (inputName) {
+    switch (name) {
       case 'filter':
-        setFilter(inputValue);
+        setFilter(value);
         break;
 
       default:
